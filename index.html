@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日佛经 — Buddhism Daily</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Serif SC","Songti SC",-apple-system,serif;background:#f5f1eb;color:#3d3429;line-height:1.9}
+.container{max-width:720px;margin:0 auto;padding:24px 20px 60px}
+header{text-align:center;padding:56px 0 40px}
+header h1{font-size:2rem;font-weight:800;color:#5c4a2a;letter-spacing:6px}
+header p{margin-top:8px;font-size:1rem;color:#8a7a5a}
+header .subtitle{font-size:0.9rem;color:#b8956a;margin-top:4px;font-style:italic}
+.list{margin-top:32px}
+.entry{display:flex;align-items:baseline;gap:16px;padding:18px 20px;background:#fffdf8;border-radius:10px;box-shadow:0 1px 8px rgba(92,74,42,0.08);margin-bottom:14px;transition:transform 0.15s,box-shadow 0.15s;text-decoration:none;color:inherit;border-left:3px solid #b8956a}
+.entry:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(92,74,42,0.12)}
+.entry .day{flex-shrink:0;font-size:0.85rem;color:#b8956a;font-weight:600;min-width:50px}
+.entry .title{font-size:1.05rem;font-weight:600;color:#5c4a2a}
+.entry .sutras{font-size:0.88rem;color:#8a7a5a;margin-left:auto;text-align:right}
+footer{text-align:center;padding:40px 0 12px;font-size:0.82rem;color:#b8a88a}
+@media(max-width:600px){
+  header h1{font-size:1.5rem}
+  .entry{flex-direction:column;gap:4px}
+  .entry .sutras{margin-left:0;text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>每日佛经</h1>
+  <p>Buddhism Daily — BigCat's Dharma Journey</p>
+  <div class="subtitle">经藏智慧 · 每日四则 · 闻思修行</div>
+</header>
+<div class="list">
+  <!-- entries will be added here -->
+</div>
+<footer>BigCat · Buddhism Daily · 2026</footer>
+</div>
+</body>
+</html>
