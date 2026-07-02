@@ -1,4 +1,4 @@
-# Buddhism Weekly 每周佛经
+# Buddhism 佛经
 
 经藏智慧，每日四则，闻思修行。
 
