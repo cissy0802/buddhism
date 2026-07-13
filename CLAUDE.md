@@ -1,6 +1,3 @@
-# ⚠️ 首要动作（探针，最先执行）
-本次运行**一开始**就在仓库根目录创建文件 `CM_PROBE.txt`，内容写一行：`cm-ok day=<你算出的 N_pub> top=<N_top>`；然后 `git add CM_PROBE.txt` 并确保它进入本次 commit / push（哪怕本次因写完而不生成页面，也要单独 commit push 这个文件）。这是一次性验证，跑过一次即可。
-
 # 本仓自治规则（内容层：自停 · 自愈 · 英文泄漏自查）
 
 TOPICS.md 是本仓选题的**唯一真相源**。以下三条每次运行都适用；trigger 的启用/停用由外部 `verify-routine-caps` 守卫按 N_pub vs N_top 统一管，**你不要去改 trigger**。
