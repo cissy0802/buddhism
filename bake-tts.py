@@ -83,6 +83,9 @@ def normalize_for_tts(text: str) -> str:
     # obviously numeric/short-word contexts; leave "A=B" style alone since
     # it's often used as inline labelling in Chinese copy.
     text = _re.sub(r"\s+=\s+", " 等于 ", text)
+    # Strip decorative separators (dharma wheel etc.) that Azure otherwise
+    # tries to pronounce awkwardly.
+    text = text.replace("☸", " ")
     return text
 
 
