@@ -36,6 +36,8 @@ COLOR_RE = re.compile(r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\)")
 SHADOW_RE = re.compile(r"\b(box-shadow|text-shadow)\s*:\s*([^;}\"]*)", re.I)
 RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
 DECL_RE = re.compile(r"(^|[;{])\s*([-a-zA-Z]+)\s*:\s*([^;}]*)")
+VAR_DEF_RE = re.compile(r"(--[\w-]+)\s*:\s*([^;{}]*)")
+VAR_USE_RE = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,[^()]*)?\)")
 
 
 # ---------- 颜色 ----------
@@ -132,10 +134,16 @@ def _shadow(c):
     return "rgba(0,0,0,%s)" % alpha
 
 
-def push_apart(fg, bg, target=MIN_CONTRAST):
-    """沿亮度方向推开字色，直到对比度够。够不到就返回能推到的最好结果。"""
+def push_apart(fg, bg, target=MIN_CONTRAST, lighten=None):
+    """沿亮度方向推开字色，直到对比度够。够不到就返回能推到的最好结果。
+
+    lighten=None 时按底色深浅自动选方向；调用方发现这个方向有别的副作用
+    （比如推暗以后文字在深色页面上反而看不见）可以指定另一个方向重试。
+    """
     h, l, s = colorsys.rgb_to_hls(fg[0] / 255, fg[1] / 255, fg[2] / 255)
-    step = 0.04 if _rel_lum(*bg) < 0.18 else -0.04
+    if lighten is None:
+        lighten = _rel_lum(*bg) < 0.18
+    step = 0.04 if lighten else -0.04
     best = fg
     for _ in range(25):
         l = min(0.97, max(0.03, l + step))
@@ -258,30 +266,96 @@ def transform_svg(src):
     return SVG_TAG_RE.sub(tag, src)
 
 
+
+def _num(attrs, key):
+    m = re.search(r'\b%s="([\d.]+)"' % key, attrs)
+    return float(m.group(1)) if m else 0.0
+
+
+def repair_svg(src, page_bg):
+    """修 SVG 里「文字压在色块上」的对比度。
+
+    CSS 那套修复够不着这里：图表的底色和字色是 <rect fill> / <text fill>，
+    没有规则可查，只能按文档顺序把文字归给它前面最近的那个大 rect。
+
+    这一步**只会提高对比度**，所以幂等、可以单独对已经转过的页面再跑一遍。
+    归属判断是启发式的，万一某段文字其实压在页面底色上，把它推向 rect 反而
+    会推没——所以推完还要对页面底色复核一次，过不了就不动。
+    """
+    pbg = _parse(page_bg)
+
+    def one(m):
+        svg, edits, surface = m.group(0), [], None
+        for t in re.finditer(r'<(rect|text|tspan)\b([^>]*)>', svg):
+            tag, attrs = t.group(1), t.group(2)
+            f = re.search(r'\bfill="(#[0-9a-fA-F]{3,6})"', attrs)
+            if not f:
+                continue
+            if tag == "rect":
+                if _num(attrs, "width") >= 40 and _num(attrs, "height") >= 20:
+                    surface = f.group(1)
+                continue
+            if not surface:
+                continue
+            fg, bg = _parse(f.group(1)), _parse(surface)
+            if not fg or not bg or contrast(bg, fg) >= MIN_CONTRAST:
+                continue
+            cand = push_apart(fg, bg)
+            if pbg and contrast(pbg, _parse(cand)) < 3.0:
+                # 这个方向把文字推进了页面底色里，换个方向再试
+                cand = push_apart(fg, bg, lighten=_rel_lum(*bg) >= 0.18)
+                if (contrast(bg, _parse(cand)) < MIN_CONTRAST
+                        or contrast(pbg, _parse(cand)) < 3.0):
+                    continue
+            a = t.start(2) + f.start(1)
+            edits.append((a, a + len(f.group(1)), cand))
+        for a, b, new in reversed(edits):
+            svg = svg[:a] + new + svg[b:]
+        return svg
+
+    return re.sub(r'<svg\b.*?</svg>', one, src, flags=re.S)
+
+
 # ---------- 页面 ----------
 
-def transform_decl(prop, val):
+def collect_vars(css):
+    """:root 里那些存了颜色的自定义属性。"""
+    return {m.group(1): m.group(2).strip()
+            for m in VAR_DEF_RE.finditer(css) if COLOR_RE.search(m.group(2))}
+
+
+def transform_decl(prop, val, cssvars=None):
     prop = prop.lower()
     if prop in ("box-shadow", "text-shadow"):
         # 阴影一律压成黑色。翻转会把深色阴影变成浅色，在深底上就成了一圈发光的边。
         return COLOR_RE.sub(lambda c: _shadow(c.group(0)), val)
-    kind = "bg" if prop in BG_PROPS else "fg" if prop in FG_PROPS else "accent"
+    if prop.startswith("--"):
+        kind = "accent"          # 定义处不知道会拿去当什么用
+    else:
+        kind = "bg" if prop in BG_PROPS else "fg" if prop in FG_PROPS else "accent"
+        if cssvars and kind in ("bg", "fg"):
+            # 一个变量常常既当底色又当字色（world-religions 的 --slate 就是），
+            # 在定义处只能二选一、必然坑一边。所以在**用到它的地方**先把值代入，
+            # 让这里的属性来决定往哪边推。
+            val = VAR_USE_RE.sub(
+                lambda m: cssvars.get(m.group(1), m.group(0)), val)
     return COLOR_RE.sub(lambda c: flip(c.group(0), kind), val)
 
 
-def transform_block(body):
+def transform_block(body, cssvars=None):
     out, last = [], 0
-    for m in re.finditer(r"([-a-zA-Z]+)\s*:\s*([^;}]*)", body):
+    for m in re.finditer(r"([-a-zA-Z-]+)\s*:\s*([^;}]*)", body):
         out.append(body[last:m.start(2)])
-        out.append(transform_decl(m.group(1), m.group(2)))
+        out.append(transform_decl(m.group(1), m.group(2), cssvars))
         last = m.end(2)
     out.append(body[last:])
     return "".join(out)
 
 
-def transform_css(css):
+def transform_css(css, cssvars=None):
     # RULE_RE 只吃得下最内层的 {}，@media 外壳会被自动跳过。
-    return RULE_RE.sub(lambda m: m.group(1) + "{" + transform_block(m.group(2)) + "}", css)
+    return RULE_RE.sub(
+        lambda m: m.group(1) + "{" + transform_block(m.group(2), cssvars) + "}", css)
 
 
 def body_bg(css):
@@ -296,38 +370,46 @@ def body_bg(css):
 
 def darken(path):
     src = open(path, encoding="utf-8").read()
-    if MARK in src:
-        return False
-    styles = list(re.finditer(r"(<style[^>]*>)(.*?)(</style>)", src, re.S | re.I))
-    if not styles:
-        return False
+    original = src
 
-    flipped = [transform_css(m.group(2)) for m in styles]
-    bg = body_bg("".join(flipped))
-    flipped = [repair(c, bg) for c in flipped]
+    if MARK not in src:
+        styles = list(re.finditer(r"(<style[^>]*>)(.*?)(</style>)", src, re.S | re.I))
+        if not styles:
+            return False
+        cssvars = collect_vars("".join(m.group(2) for m in styles))
+        flipped = [transform_css(m.group(2), cssvars) for m in styles]
+        bg = body_bg("".join(flipped))
+        flipped = [repair(c, bg) for c in flipped]
 
-    out, last = [], 0
-    for i, m in enumerate(styles):
-        head = "\n%s\n:root{color-scheme:dark}\n" % MARK if i == 0 else ""
-        out.append(src[last:m.start()] + m.group(1) + head + flipped[i] + m.group(3))
-        last = m.end()
-    out.append(src[last:])
-    src = "".join(out)
+        out, last = [], 0
+        for i, m in enumerate(styles):
+            head = "\n%s\n:root{color-scheme:dark}\n" % MARK if i == 0 else ""
+            out.append(src[last:m.start()] + m.group(1) + head + flipped[i] + m.group(3))
+            last = m.end()
+        out.append(src[last:])
+        src = "".join(out)
 
-    src = transform_svg(src)
+        src = transform_svg(src)
 
-    # style="..." 是裸声明列表，没有 {}，走 transform_block 而不是 transform_css
-    src = re.sub(r'style="([^"]*)"',
-                 lambda m: 'style="%s"' % repair("{%s}" % transform_block(m.group(1)), bg)[1:-1],
-                 src)
+        # style="..." 是裸声明列表，没有 {}，走 transform_block 而不是 transform_css
+        src = re.sub(r'style="([^"]*)"',
+                     lambda m: 'style="%s"' % repair("{%s}" % transform_block(m.group(1), cssvars), bg)[1:-1],
+                     src)
 
-    # 手机状态栏跟着页面走，否则顶部会留一条白边
-    tag = '<meta content="%s" name="theme-color"/>' % bg
-    if re.search(r'<meta[^>]*name="theme-color"', src, re.I):
-        src = re.sub(r'<meta[^>]*name="theme-color"[^>]*/?>', tag, src, flags=re.I)
+        # 手机状态栏跟着页面走，否则顶部会留一条白边
+        tag = '<meta content="%s" name="theme-color"/>' % bg
+        if re.search(r'<meta[^>]*name="theme-color"', src, re.I):
+            src = re.sub(r'<meta[^>]*name="theme-color"[^>]*/?>', tag, src, flags=re.I)
+        else:
+            src = re.sub(r"(</title>)", r"\1\n" + tag, src, count=1, flags=re.I)
     else:
-        src = re.sub(r"(</title>)", r"\1\n" + tag, src, count=1, flags=re.I)
+        bg = body_bg("".join(re.findall(r"<style[^>]*>(.*?)</style>", src, re.S | re.I)))
 
+    # 只提高对比度，幂等——已经转过的页面也可以单独再跑这一步
+    src = repair_svg(src, bg)
+
+    if src == original:
+        return False
     open(path, "w", encoding="utf-8").write(src)
     return True
 
