@@ -24,6 +24,14 @@ import sys
 MARK = "/* bigcat-dark v1 */"
 MIN_CONTRAST = 4.0
 
+# 本站的底色身份。四个睡前读物仓的原始底色都是近白的米色，几乎不带彩度
+# （#f5f1eb 的 chroma 只有 0.039），照原色相推暗会全部收敛成同一种暖黑——
+# 四个站长得一模一样。所以「接近中性」的面改用本站色相重新上色；
+# 真正有颜色的元素（chroma > NEUTRAL）保持自己的颜色不动。
+TINT_HUE = 32          # 度：本仓的身份色相（暖褐）
+TINT_CHROMA = 0.10     # 面积大的底色目标彩度
+NEUTRAL = 0.09         # 低于这个彩度就算「中性面」，可以重新上色
+
 COLOR_RE = re.compile(r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\)")
 SHADOW_RE = re.compile(r"\b(box-shadow|text-shadow)\s*:\s*([^;}\"]*)", re.I)
 RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
@@ -92,6 +100,11 @@ def flip(c, kind="accent"):
     # 1 - l 是朴素翻转，但设计把 bg / 卡片 / 高亮三层都堆在 0.90~1.00 这一小段里，
     # 直接翻转会把它们压成几乎同一个黑。**0.85 把靠近白的那一段重新拉开。
     inv = 0.04 + ((1.0 - l) ** 0.85) * 0.86
+
+    if kind == "bg" and chroma < NEUTRAL:
+        # 越暗的面给越少彩度，免得深处发闷发脏
+        h = TINT_HUE / 360.0
+        chroma = max(chroma, TINT_CHROMA * min(1.0, (min(inv, l, 0.38)) / 0.10))
 
     if kind == "bg":
         # 封顶 0.38 而不是更高：亮块压暗以后，压在上面的白字对比度自然就够了。
