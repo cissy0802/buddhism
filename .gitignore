@@ -2,3 +2,7 @@
 # served by the bigcat-audio Worker. A local bake without R2_* credentials
 # still writes them here — they must never be committed again.
 audio/
+
+# Python bytecode from running the repo scripts locally
+__pycache__/
+*.pyc
