@@ -68,3 +68,29 @@ darken.py 保留色相和彩度，原设计的性格还在，只换明暗。
 收敛成同一种暖黑、四个站长得一模一样；所以「接近中性」的面改用这个色相
 重新上色，真正有颜色的元素保持自己的颜色。改它等于改本站的整体调性，
 不要顺手动。
+
+## 新页面必带「十条要点」（2026-10-17 起）
+
+本站页面结构：读前导言（可无）→ 四张 `sutra-card`（每张含【经文选段】【中文详解】【跨学科联想】【生活实践】【English Summary】【每日一修】）→ 【深入思考】卡 → 返回首页。
+**2026-10-17 起**，在第四张经文卡之后、【深入思考】卡之前，新增一张独立的十条要点卡（前后照样用 `<div class="divider">☸ ☸ ☸</div>` 隔开）。
+
+- **不加文末「越界」框**：本站每张经文卡已有【跨学科联想】，再加一个越界框就是重复。
+- **十条要点 `<ol class="takeaways">`**（2026-10-17 起，**必写，正好 10 条**）：读者拿它直接记笔记。每条一句完整的话，约 20–45 字，**单独抄出去也能看懂**：写出经名、宗派、人物和名相（如「如来藏」「阿赖耶识」），不用「此经」「这一派」「它」这类要靠上下文的代词。覆盖四部经最值得记的义理、修法和判别，可含【跨学科联想】里的一两条；顺序跟正文走（大致每部经两三条）。经名、祖师名不必每条都当主语开头：全组里同一个名字出现两三次就够，其余各条直接写义理、机制或事实（写「如来藏是接引畏惧无我者的方便，实义仍是空」，不写「《楞伽经》认为如来藏……」）。**只总结正文已经写过的东西**，不加新信息，不放经文引语。英文页标题 `Ten takeaways`，条目为对应英译。
+  ```html
+  <div class="sutra-card tk">
+  <h3>【十条要点】</h3>
+  <ol class="takeaways">
+  <li>…</li>
+  </ol>
+  </div>
+  ```
+  CSS（各页 `<style>` 是从上一篇照抄的，旧页里没有这段；**第一次写时把它追加到 `<style>` 末尾**，之后照抄即可）。照常写浅色，CI 的 `darken.py` 会统一推深：
+  ```css
+  .tk h3{font-size:1.1rem;color:#5c4a2a;letter-spacing:2px;margin-bottom:14px}
+  .takeaways{counter-reset:tk;list-style:none;margin:0;padding:0;border:1px solid #e3d5b8;border-radius:10px;background:#fbf6ea}
+  .takeaways li{counter-increment:tk;position:relative;margin:0;padding:11px 18px 11px 52px;border-top:1px dashed #e3d5b8;font-size:0.95rem;line-height:1.8;color:#3d3429}
+  .takeaways li:first-child{border-top:none}
+  .takeaways li::before{content:counter(tk,decimal-leading-zero);position:absolute;left:18px;top:12px;font-family:Georgia,serif;font-size:0.82rem;color:#b8956a;font-weight:700}
+  ```
+  篇幅：十条要点约 350 字，`.maxchars` 已为它从 3750 上调到 4100（2026-10-17）；其余各节的篇幅不变。
+  `publish.sh` 只对**从未提交过的新页面**（含 `.en.html`）检查正好 10 个 `<li>`；已发布页面不补、不改。
