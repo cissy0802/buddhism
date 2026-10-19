@@ -42,6 +42,11 @@ header .date{margin-top:6px;font-size:0.9rem;color:#b8956a;font-style:italic}
 }
 .primer{border-left-color:#b88b3d}
 .primer h2{color:#debe7e}
+.tk h3{font-size:1.1rem;color:#ccba9a;letter-spacing:2px;margin-bottom:14px}
+.takeaways{counter-reset:tk;list-style:none;margin:0;padding:0;border:1px solid #56482b;border-radius:10px;background:#281c0e}
+.takeaways li{counter-increment:tk;position:relative;margin:0;padding:11px 18px 11px 52px;border-top:1px dashed #56482b;font-size:0.95rem;line-height:1.8;color:#cac1b6}
+.takeaways li:first-child{border-top:none}
+.takeaways li::before{content:counter(tk,decimal-leading-zero);position:absolute;left:18px;top:12px;font-family:Georgia,serif;font-size:0.82rem;color:#b8956a;font-weight:700}
 </style>
 </head>
 <body>
@@ -254,6 +259,22 @@ header .date{margin-top:6px;font-size:0.9rem;color:#b8956a;font-style:italic}
 
 <div class="divider">☸ ☸ ☸</div>
 
+<div class="sutra-card tk">
+<h3>Ten takeaways</h3>
+<ol class="takeaways">
+<li>Theravāda follows the Pali canon lineage; “Hīnayāna” is a label applied by the Mahāyāna side, never Theravāda’s own name for itself.</li>
+<li>Buddhaghosa compiled the Visuddhimagga in fifth-century Sri Lanka from the Mahāvihāra commentaries, setting the standard for Pali Buddhism.</li>
+<li>The Visuddhimagga is built on the three trainings of virtue, concentration and wisdom, and maps the path as seven self-checkable purifications.</li>
+<li>Its concentration section lists forty meditation subjects, from breathing and foulness to the immeasurables and kasiṇas, a library of attention training.</li>
+<li>Abhidhamma separates conventional concepts such as table or self from ultimate realities: mind, mental factors, matter and Nibbāna, which cannot be broken down further.</li>
+<li>Anuruddha’s Abhidhammattha-saṅgaha analyzes 89 (or 121) types of mind and 52 mental factors, and is the first Abhidhamma textbook for Theravāda monks.</li>
+<li>In the doctrine of mind-moments, one complete cognitive process runs through seventeen mind-moments, so “a single thought” is really a stream of instants.</li>
+<li>Insight practice uses a steady mind to see impermanence, suffering and non-self; the sixteen insight knowledges pivot on directly seeing things arise and pass.</li>
+<li>The Burmese insight revival differs in method: Mahasi notes the rising and falling abdomen, while U Ba Khin and Goenka sweep bodily sensations without reacting.</li>
+<li>The Satipaṭṭhāna Sutta (MN 10) teaches body, feeling, mind and dhammas as the path to Nibbāna; DN 22 is its longer version, expanding the four noble truths.</li>
+</ol>
+</div>
+<div class="divider">☸ ☸ ☸</div>
 <!-- Deeper Reflection -->
 <div class="sutra-card">
   <h2>Deeper Reflection</h2>

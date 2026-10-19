@@ -44,6 +44,11 @@ header .date{margin-top:6px;font-size:0.9rem;color:#b8956a;font-style:italic}
 }
 .primer{border-left-color:#b88b3d}
 .primer h2{color:#debe7e}
+.tk h3{font-size:1.1rem;color:#ccba9a;letter-spacing:2px;margin-bottom:14px}
+.takeaways{counter-reset:tk;list-style:none;margin:0;padding:0;border:1px solid #56482b;border-radius:10px;background:#281c0e}
+.takeaways li{counter-increment:tk;position:relative;margin:0;padding:11px 18px 11px 52px;border-top:1px dashed #56482b;font-size:0.95rem;line-height:1.8;color:#cac1b6}
+.takeaways li:first-child{border-top:none}
+.takeaways li::before{content:counter(tk,decimal-leading-zero);position:absolute;left:18px;top:12px;font-family:Georgia,serif;font-size:0.82rem;color:#b8956a;font-weight:700}
 </style>
 </head>
 <body>
@@ -255,6 +260,22 @@ header .date{margin-top:6px;font-size:0.9rem;color:#b8956a;font-style:italic}
   </div>
 </div>
 
+<div class="divider">☸ ☸ ☸</div>
+<div class="sutra-card tk">
+<h3>Ten takeaways</h3>
+<ol class="takeaways">
+<li>The Nyayapravesa, a logic primer by Dignaga's disciple Sankarasvamin, was translated by Xuanzang in 647 and became the standard introduction to Chinese Buddhist logic.</li>
+<li>Buddhist logic is organized as "eight gates and two benefits": proof, refutation and their fallacies serve to persuade others; perception, inference and their fallacies serve one's own knowing.</li>
+<li>The three-membered proof consists of thesis, reason and example; Dignaga dropped the two extra members of the older five-part form, a major simplification of Indian logic.</li>
+<li>The example in a three-membered proof supplies both a general rule and a concrete instance, combining deduction and induction rather than being pure deduction like the syllogism.</li>
+<li>Dignaga's nine reasons exhaustively list how a reason can be distributed across similar and dissimilar cases; only "present in similar, wholly absent in dissimilar" yields a valid reason.</li>
+<li>A valid reason must have three characteristics: it covers the subject of the thesis, occurs in at least one similar case, and is absent from every dissimilar case.</li>
+<li>Requiring a reason to be absent from all dissimilar cases resembles Popper's falsifiability, but Buddhist logic seeks certainty while Popper only claims a theory is not yet refuted.</li>
+<li>Dharmakirti holds there are only two valid cognitions, perception and inference, because there are only two objects: the unique particular and the abstract universal.</li>
+<li>Dharmakirti added "non-erroneous" to Dignaga's definition of perception as free of concepts, so seeing a double moon with diseased eyes is not true perception.</li>
+<li>Apoha theory says the word "cow" means only the exclusion of non-cows, so language reaches universals but never the ineffable particular, and suchness can only be described by negation.</li>
+</ol>
+</div>
 <div class="divider">☸ ☸ ☸</div>
 
 <!-- Reflections -->
