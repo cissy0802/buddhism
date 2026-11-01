@@ -304,6 +304,10 @@ def synth_long(key: str, region: str, voice_name: str, text: str) -> bytes:
         return out.read_bytes()
 
 
+# Off only while recomputing the pre-table narration (see process_page).
+READ_TABLES = True
+
+
 def table_speech(table, lang: str) -> str:
     """Linearise a <table> for the ear: each row as "列名：内容；列名：内容。".
 
@@ -453,7 +457,7 @@ def collect_groups(soup) -> list[tuple]:
         for node in body.descendants:
             if id(node) in h2_set:
                 h2_seen += 1
-            if not hasattr(node, "name") or (node.name not in NARRATION_TAGS and node.name != "table"):
+            if not hasattr(node, "name") or (node.name not in NARRATION_TAGS and not (node.name == "table" and READ_TABLES)):
                 continue
             if node.find_parent("nav") or node.find_parent(class_="mmd-controls"):
                 continue
@@ -462,7 +466,7 @@ def collect_groups(soup) -> list[tuple]:
                 continue
             # Tables are read row by row, each cell after its column title
             # (table_speech); their cells are never narrated on their own.
-            if node.name == "table":
+            if READ_TABLES and node.name == "table":
                 if node.find_parent("table") is not None:
                     continue
                 tcls = node.get("class") or []
@@ -472,7 +476,7 @@ def collect_groups(soup) -> list[tuple]:
                 if ttext:
                     bins_split[h2_seen].append(ttext)
                 continue
-            if node.find_parent("table") is not None:
+            if READ_TABLES and node.find_parent("table") is not None:
                 continue
             # Only direct visible text — skip divs that WRAP block-level children
             # (their text is captured via those inner elements). Include divs whose
@@ -625,6 +629,19 @@ def process_page(
     soup = BeautifulSoup(html_src, "html.parser")
     mode = detect_page_mode(soup)
     groups = collect_groups(soup)
+    # Sections baked before tables were narrated keep their audio: if the
+    # anchor still carries the hash of the old table-less text and that mp3
+    # exists, skip. Editing the section changes both texts, so it re-bakes
+    # with its tables read. Saves re-synthesising every old table section.
+    global READ_TABLES
+    READ_TABLES = False
+    try:
+        legacy_groups = collect_groups(soup)
+    finally:
+        READ_TABLES = True
+    legacy = {}
+    if len(legacy_groups) == len(groups):
+        legacy = {id(a): t for a, t in legacy_groups}
     print(f"  {len(groups)} model groups (cover + N models)  [mode={mode}]")
 
     changed = False
@@ -673,6 +690,12 @@ def process_page(
             # SPLIT mode: each file is single-language, JS reads `data-tts`.
             # FULL mode: file holds both, JS reads `data-tts-{lang}`.
             attr_name = "data-tts" if mode == "split" else f"data-tts-{lang}"
+            old_text = legacy.get(id(anchor), {}).get(lang, "")
+            if old_text and old_text != text:
+                old_digest = hash_text(old_text)
+                if anchor.get(attr_name) == old_digest and store.has(lang, old_digest):
+                    skipped_existing += 1
+                    continue
             if anchor.get(attr_name) != digest:
                 anchor[attr_name] = digest
                 changed = True
